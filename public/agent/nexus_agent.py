@@ -186,7 +186,7 @@ def heartbeat():
             json=payload,
             timeout=10
         )
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat → HTTP {resp.status_code}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat → HTTP {resp.status_code} | {resp.text[:200]}")
         if resp.status_code == 401:
             print("ОШИБКА: Неверный токен! Проверьте AGENT_TOKEN в файле")
             return []
