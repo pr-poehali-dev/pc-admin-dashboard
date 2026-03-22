@@ -3,8 +3,8 @@
     {
       "name": "Heartbeat invalid token",
       "method": "POST",
-      "path": "/heartbeat",
-      "body": {"token": "invalid", "status": "idle", "ip": "127.0.0.1", "active_window": ""},
+      "path": "/",
+      "body": {"action": "heartbeat", "token": "invalid", "status": "idle", "ip": "127.0.0.1"},
       "expectedStatus": 401,
       "bodyMatcher": "partial"
     }

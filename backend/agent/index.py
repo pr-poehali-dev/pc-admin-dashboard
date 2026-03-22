@@ -1,6 +1,9 @@
 """
-Endpoint для агента на ПК: heartbeat, получение команд, отчёт о выполнении, загрузка скриншотов.
-Агент на каждом ПК каждые 5 секунд делает POST /agent/heartbeat с токеном.
+Единый endpoint для агента на ПК.
+Все запросы идут на POST /, тип действия передаётся в поле action тела:
+  {"action": "heartbeat", "token": "...", ...}
+  {"action": "result",    "token": "...", "command_id": 1, "result": {...}}
+  {"action": "screenshot","token": "...", "image": "<base64>"}
 """
 import json
 import os
@@ -25,15 +28,13 @@ def handler(event: dict, context) -> dict:
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
-    path = event.get('path', '/')
-    parts = [p for p in path.strip('/').split('/') if p]
-    action = parts[-1] if parts else ''
-
     try:
-        _body_for_token = json.loads(event.get('body') or '{}')
+        body = json.loads(event.get('body') or '{}')
     except Exception:
-        _body_for_token = {}
-    token = _body_for_token.get('token', '')
+        body = {}
+
+    token = body.get('token', '')
+    action = body.get('action', '')
 
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -47,10 +48,8 @@ def handler(event: dict, context) -> dict:
         pc_id = pc['id']
 
         if action == 'heartbeat':
-            body = json.loads(event.get('body') or '{}')
             status = body.get('status', 'idle')
             ip = body.get('ip', '')
-            active_window = body.get('active_window', '')
 
             cur.execute(f"""
                 UPDATE {SCHEMA}.pcs
@@ -81,7 +80,6 @@ def handler(event: dict, context) -> dict:
             }
 
         if action == 'result':
-            body = json.loads(event.get('body') or '{}')
             cmd_id = body.get('command_id')
             result = body.get('result', {})
             cur.execute(f"""
@@ -93,7 +91,6 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
 
         if action == 'screenshot':
-            body = json.loads(event.get('body') or '{}')
             image_b64 = body.get('image')
             if not image_b64:
                 return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'No image'})}
@@ -116,7 +113,7 @@ def handler(event: dict, context) -> dict:
             conn.commit()
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True, 'url': url})}
 
-        return {'statusCode': 404, 'headers': CORS, 'body': json.dumps({'error': 'Unknown action'})}
+        return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'Unknown action'})}
 
     finally:
         cur.close()
