@@ -34,6 +34,11 @@ def handler(event: dict, context) -> dict:
         if method == 'GET' and len(parts) <= 1:
             cur.execute(f"""
                 SELECT p.*,
+                  CASE
+                    WHEN p.last_seen IS NULL THEN 'offline'
+                    WHEN NOW() - p.last_seen > INTERVAL '15 seconds' THEN 'offline'
+                    ELSE p.status
+                  END AS status,
                   s.id as session_id, s.started_at, s.game,
                   c.name as client_name,
                   t.price_per_hour
