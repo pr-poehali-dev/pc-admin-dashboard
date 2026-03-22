@@ -27,7 +27,7 @@ def handler(event: dict, context) -> dict:
 
     path = event.get('path', '/')
     parts = [p for p in path.strip('/').split('/') if p]
-    action = parts[1] if len(parts) >= 2 else ''
+    action = parts[-1] if parts else ''
 
     headers = event.get('headers') or {}
     token = headers.get('X-Agent-Token') or headers.get('x-agent-token', '')
