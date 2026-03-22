@@ -32,7 +32,7 @@ from datetime import datetime
 
 # ===================== НАСТРОЙКИ =====================
 AGENT_TOKEN = "ВСТАВЬ_ТОКЕН_СЮДА"   # Токен из панели управления
-SERVER_URL = "https://functions.poehali.dev/b9f4a55e-1d4e-434c-9baa-b1bbcccb3f9f"
+SERVER_URL = "https://functions.poehali.dev/b9f4a55e-1d4e-434c-9baa-b1bbcccb3f9f"  # agent
 HEARTBEAT_INTERVAL = 5  # секунд
 # =====================================================
 
