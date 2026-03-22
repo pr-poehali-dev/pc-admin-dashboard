@@ -1,11 +1,10 @@
 {
   "tests": [
     {
-      "name": "Heartbeat without token returns 401",
+      "name": "Heartbeat invalid token",
       "method": "POST",
-      "path": "/",
-      "headers": {},
-      "body": {"status": "idle"},
+      "path": "/heartbeat",
+      "body": {"token": "invalid", "status": "idle", "ip": "127.0.0.1", "active_window": ""},
       "expectedStatus": 401,
       "bodyMatcher": "partial"
     }

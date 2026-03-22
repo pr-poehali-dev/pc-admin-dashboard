@@ -29,7 +29,6 @@ def handler(event: dict, context) -> dict:
     parts = [p for p in path.strip('/').split('/') if p]
     action = parts[-1] if parts else ''
 
-    # Токен читаем из body (заголовки фильтруются платформой)
     try:
         _body_for_token = json.loads(event.get('body') or '{}')
     except Exception:
@@ -40,7 +39,6 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
-        # Проверяем токен агента
         cur.execute(f"SELECT * FROM {SCHEMA}.pcs WHERE agent_token = %s", (token,))
         pc = cur.fetchone()
         if not pc:
@@ -48,7 +46,6 @@ def handler(event: dict, context) -> dict:
 
         pc_id = pc['id']
 
-        # POST /agent/heartbeat — агент сообщает что живёт + отдаём команды
         if action == 'heartbeat':
             body = json.loads(event.get('body') or '{}')
             status = body.get('status', 'idle')
@@ -61,7 +58,6 @@ def handler(event: dict, context) -> dict:
                 WHERE id = %s
             """, (status, ip, pc_id))
 
-            # Берём pending-команды для этого ПК
             cur.execute(f"""
                 SELECT id, command, params FROM {SCHEMA}.pc_commands
                 WHERE pc_id = %s AND status = 'pending'
@@ -70,7 +66,6 @@ def handler(event: dict, context) -> dict:
             """, (pc_id,))
             commands = [dict(r) for r in cur.fetchall()]
 
-            # Помечаем как sent
             if commands:
                 ids = [c['id'] for c in commands]
                 cur.execute(f"""
@@ -85,7 +80,6 @@ def handler(event: dict, context) -> dict:
                 'body': json.dumps({'ok': True, 'commands': commands})
             }
 
-        # POST /agent/result — агент отчитывается о выполнении команды
         if action == 'result':
             body = json.loads(event.get('body') or '{}')
             cmd_id = body.get('command_id')
@@ -98,7 +92,6 @@ def handler(event: dict, context) -> dict:
             conn.commit()
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
 
-        # POST /agent/screenshot — агент загружает скриншот
         if action == 'screenshot':
             body = json.loads(event.get('body') or '{}')
             image_b64 = body.get('image')
