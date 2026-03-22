@@ -93,20 +93,24 @@ function PCCard({ pc, onAction }: { pc: PCRow; onAction: (pc: PCRow, action: str
       {showMenu && (
         <div className="absolute top-10 right-2 z-20 bg-surface-3 border border-white/10 rounded-lg shadow-xl py-1 min-w-[170px]">
           {[
-            { label: 'Скриншот', icon: 'Camera', action: 'screenshot' },
-            { label: 'Перезагрузить', icon: 'RefreshCw', action: 'reboot' },
-            { label: 'Выключить', icon: 'PowerOff', action: 'shutdown' },
-            { label: 'Заблокировать', icon: 'Lock', action: 'lock' },
-            { label: 'Разблокировать', icon: 'Unlock', action: 'unlock' },
-            { label: 'Обслуживание', icon: 'Wrench', action: 'maintenance' },
-            { label: 'Сообщение', icon: 'MessageSquare', action: 'message' },
-          ].map(item => (
-            <button key={item.action}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
-              onClick={() => { onAction(pc, item.action); setShowMenu(false); }}>
-              <Icon name={item.icon} size={13} />{item.label}
-            </button>
-          ))}
+            { label: 'Скриншот', icon: 'Camera', action: 'screenshot', needsOnline: true },
+            { label: 'Перезагрузить', icon: 'RefreshCw', action: 'reboot', needsOnline: true },
+            { label: 'Выключить', icon: 'PowerOff', action: 'shutdown', needsOnline: true },
+            { label: 'Заблокировать', icon: 'Lock', action: 'lock', needsOnline: true },
+            { label: 'Разблокировать', icon: 'Unlock', action: 'unlock', needsOnline: true },
+            { label: 'Обслуживание', icon: 'Wrench', action: 'maintenance', needsOnline: false },
+            { label: 'Сообщение', icon: 'MessageSquare', action: 'message', needsOnline: true },
+          ].map(item => {
+            const disabled = item.needsOnline && pc.status === 'offline';
+            return (
+              <button key={item.action}
+                disabled={disabled}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${disabled ? 'text-white/20 cursor-not-allowed' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                onClick={() => { if (!disabled) { onAction(pc, item.action); setShowMenu(false); } }}>
+                <Icon name={item.icon} size={13} />{item.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -240,7 +244,7 @@ export default function PCGrid() {
       await apiSendCommand(pc.id, action, params);
       showNotif(`${pc.name}: ${labels[action] || action}`);
     } catch (e) {
-      showNotif(`Ошибка: ${pc.name} недоступен`);
+      showNotif(`${pc.name}: не удалось отправить команду`);
     }
   };
 
