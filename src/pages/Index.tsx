@@ -48,7 +48,7 @@ export default function Index() {
 
   useEffect(() => {
     loadPCs();
-    const t = setInterval(loadPCs, 8000);
+    const t = setInterval(loadPCs, 30000);
     return () => clearInterval(t);
   }, [loadPCs]);
 

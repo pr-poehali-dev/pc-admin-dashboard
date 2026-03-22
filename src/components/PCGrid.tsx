@@ -221,7 +221,7 @@ export default function PCGrid() {
 
   useEffect(() => {
     loadPCs();
-    const interval = setInterval(loadPCs, 5000);
+    const interval = setInterval(loadPCs, 15000);
     return () => clearInterval(interval);
   }, [loadPCs]);
 
