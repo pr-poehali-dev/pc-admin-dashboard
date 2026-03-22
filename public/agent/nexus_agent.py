@@ -185,11 +185,13 @@ def heartbeat():
             json=payload,
             timeout=10
         )
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat → HTTP {resp.status_code}")
         if resp.status_code == 401:
-            print("ОШИБКА: Неверный токен! Проверьте AGENT_TOKEN")
+            print("ОШИБКА: Неверный токен! Проверьте AGENT_TOKEN в файле")
             return []
         if resp.status_code == 200:
             data = resp.json()
+            print(f"  OK, статус: {data}")
             return data.get("commands", [])
     except requests.exceptions.ConnectionError:
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Нет соединения с сервером...")
