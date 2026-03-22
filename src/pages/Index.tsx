@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Icon from '@/components/ui/icon';
 import Dashboard from '@/components/Dashboard';
 import PCGrid from '@/components/PCGrid';
@@ -7,14 +7,14 @@ import Finance from '@/components/Finance';
 import Tariffs from '@/components/Tariffs';
 import Clients from '@/components/Clients';
 import Settings from '@/components/Settings';
-import { pcs } from '@/data/mockData';
+import { apiGetPCs, PCRow } from '@/api/client';
 
 type Section = 'dashboard' | 'pcs' | 'sessions' | 'finance' | 'tariffs' | 'clients' | 'settings';
 
-const nav: { id: Section; label: string; icon: string; badge?: number }[] = [
+const nav: { id: Section; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Дашборд', icon: 'LayoutDashboard' },
-  { id: 'pcs', label: 'ПК', icon: 'Monitor', badge: pcs.filter(p => p.status === 'active').length },
-  { id: 'sessions', label: 'Сессии', icon: 'Play', badge: 5 },
+  { id: 'pcs', label: 'ПК', icon: 'Monitor' },
+  { id: 'sessions', label: 'Сессии', icon: 'Play' },
   { id: 'clients', label: 'Клиенты', icon: 'Users' },
   { id: 'finance', label: 'Финансы', icon: 'BarChart3' },
   { id: 'tariffs', label: 'Тарифы', icon: 'Tag' },
@@ -35,11 +35,22 @@ export default function Index() {
   const [section, setSection] = useState<Section>('dashboard');
   const [time, setTime] = useState(new Date());
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [pcs, setPCs] = useState<PCRow[]>([]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const loadPCs = useCallback(async () => {
+    try { setPCs(await apiGetPCs()); } catch (e) { console.error(e); }
+  }, []);
+
+  useEffect(() => {
+    loadPCs();
+    const t = setInterval(loadPCs, 8000);
+    return () => clearInterval(t);
+  }, [loadPCs]);
 
   const activePCs = pcs.filter(p => p.status === 'active').length;
   const totalPCs = pcs.length;
@@ -115,15 +126,10 @@ export default function Index() {
                 {sidebarOpen && (
                   <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
                 )}
-                {sidebarOpen && item.badge && (
-                  <span
-                    className="text-xs font-mono font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
-                    style={{
-                      background: active ? 'rgba(0,255,255,0.2)' : 'rgba(255,255,255,0.08)',
-                      color: active ? '#00ffff' : 'rgba(255,255,255,0.4)',
-                    }}
-                  >
-                    {item.badge}
+                {sidebarOpen && item.id === 'pcs' && activePCs > 0 && (
+                  <span className="text-xs font-mono font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+                    style={{ background: active ? 'rgba(0,255,255,0.2)' : 'rgba(255,255,255,0.08)', color: active ? '#00ffff' : 'rgba(255,255,255,0.4)' }}>
+                    {activePCs}
                   </span>
                 )}
               </button>

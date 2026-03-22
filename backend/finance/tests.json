@@ -1,0 +1,11 @@
+{
+  "tests": [
+    {
+      "name": "GET finance stats",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

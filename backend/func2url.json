@@ -1,0 +1,8 @@
+{
+  "finance": "https://functions.poehali.dev/baf40df7-331c-4c8a-9124-ee78e02551c2",
+  "agent": "https://functions.poehali.dev/b9f4a55e-1d4e-434c-9baa-b1bbcccb3f9f",
+  "clients": "https://functions.poehali.dev/e0851e68-3d6e-457a-a3f2-7674e298e5de",
+  "sessions": "https://functions.poehali.dev/fdd80796-3bcb-437a-b822-9708e4095894",
+  "tariffs": "https://functions.poehali.dev/e58f7982-940b-4e58-8e9a-299bfa255839",
+  "pcs": "https://functions.poehali.dev/9fc63b57-6f54-485f-a2f7-34dbe1a0fa73"
+}

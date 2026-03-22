@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Heartbeat without token returns 401",
+      "method": "POST",
+      "path": "/",
+      "headers": {},
+      "body": {"status": "idle"},
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

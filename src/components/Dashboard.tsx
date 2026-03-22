@@ -1,77 +1,67 @@
-import { pcs, sessions, transactions } from '@/data/mockData';
+import { useEffect, useState } from 'react';
+import { apiGetPCs, apiGetSessions, apiGetFinanceStats, PCRow, SessionRow, FinanceStats } from '@/api/client';
 import Icon from '@/components/ui/icon';
 
-const stats = [
-  {
-    label: 'ПК онлайн',
-    value: pcs.filter(p => p.status === 'active').length,
-    total: pcs.length,
-    color: '#00ffff',
-    icon: 'Monitor',
-    glow: 'glow-cyan',
-  },
-  {
-    label: 'Активных сессий',
-    value: sessions.filter(s => s.status === 'active').length,
-    color: '#22c55e',
-    icon: 'Play',
-    glow: 'glow-green',
-  },
-  {
-    label: 'Доход сегодня',
-    value: '8 420 ₽',
-    color: '#a855f7',
-    icon: 'TrendingUp',
-    glow: 'glow-purple',
-  },
-  {
-    label: 'На обслуживании',
-    value: pcs.filter(p => p.status === 'maintenance').length,
-    color: '#f97316',
-    icon: 'Wrench',
-    glow: 'glow-orange',
-  },
-];
-
-const topGames = [
-  { game: 'CS2', count: 3, color: '#f97316' },
-  { game: 'Cyberpunk 2077', count: 1, color: '#a855f7' },
-  { game: 'Dota 2', count: 1, color: '#22c55e' },
-  { game: 'Valorant', count: 1, color: '#ef4444' },
-  { game: 'GTA V', count: 1, color: '#00ffff' },
-];
-
 export default function Dashboard() {
-  const activePCs = pcs.filter(p => p.status === 'active');
+  const [pcs, setPCs] = useState<PCRow[]>([]);
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [finance, setFinance] = useState<FinanceStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [p, s, f] = await Promise.all([apiGetPCs(), apiGetSessions(), apiGetFinanceStats()]);
+        setPCs(p);
+        setSessions(s);
+        setFinance(f.stats);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const activePCs = pcs.filter(p => p.status === 'active').length;
+  const activeSessions = sessions.filter(s => s.status === 'active');
+
+  const stats = [
+    { label: 'ПК онлайн', value: activePCs, total: pcs.length, color: '#00ffff', icon: 'Monitor' },
+    { label: 'Активных сессий', value: activeSessions.length, color: '#22c55e', icon: 'Play' },
+    { label: 'Доход сегодня', value: finance ? `${finance.total_sessions.toLocaleString()} ₽` : '—', color: '#a855f7', icon: 'TrendingUp' },
+    { label: 'На обслуживании', value: pcs.filter(p => p.status === 'maintenance').length, color: '#f97316', icon: 'Wrench' },
+  ];
+
+  const zones = ['Стандарт', 'VIP', 'Турнирная'] as const;
+  const zoneColors: Record<string, string> = { VIP: '#a855f7', Турнирная: '#f97316', Стандарт: '#00ffff' };
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-neon-cyan/30 border-t-neon-cyan rounded-full animate-spin" />
+        <span className="text-white/30 text-sm">Загрузка данных...</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Stats Grid */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <div
-            key={i}
-            className="relative bg-surface-2 border border-white/5 rounded-xl p-5 card-hover overflow-hidden"
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <div
-              className="absolute inset-0 opacity-5 rounded-xl"
-              style={{ background: `radial-gradient(circle at top right, ${stat.color}, transparent 70%)` }}
-            />
+          <div key={i} className="relative bg-surface-2 border border-white/5 rounded-xl p-5 card-hover overflow-hidden">
+            <div className="absolute inset-0 opacity-5 rounded-xl" style={{ background: `radial-gradient(circle at top right, ${stat.color}, transparent 70%)` }} />
             <div className="flex items-start justify-between mb-3">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}
-              >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}>
                 <Icon name={stat.icon} size={18} style={{ color: stat.color }} />
               </div>
-              {stat.total && (
-                <span className="font-mono text-xs text-white/30">/{stat.total}</span>
-              )}
+              {stat.total !== undefined && <span className="font-mono text-xs text-white/30">/{stat.total}</span>}
             </div>
-            <div className="font-mono text-3xl font-bold" style={{ color: stat.color }}>
-              {stat.value}
-            </div>
+            <div className="font-mono text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
             <div className="text-sm text-white/50 mt-1">{stat.label}</div>
           </div>
         ))}
@@ -85,108 +75,91 @@ export default function Dashboard() {
               <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
               Активные сессии
             </h3>
-            <span className="font-mono text-xs text-white/30">
-              {new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}
-            </span>
+            <span className="font-mono text-xs text-white/30">{new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
-          <div className="space-y-2">
-            {sessions.filter(s => s.status === 'active').map((session) => (
-              <div
-                key={session.id}
-                className="flex items-center justify-between p-3 bg-surface-3/50 rounded-lg border border-white/5 hover:border-neon-cyan/20 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-neon-cyan/10 border border-neon-cyan/20 flex items-center justify-center">
-                    <span className="font-mono text-neon-cyan text-xs font-bold">{session.pcId.toString().padStart(2, '0')}</span>
+          {activeSessions.length === 0 ? (
+            <div className="text-center py-8 text-white/20 text-sm">Нет активных сессий</div>
+          ) : (
+            <div className="space-y-2">
+              {activeSessions.map((session) => {
+                const durationMins = Math.round(session.duration_calc || 0);
+                return (
+                  <div key={session.id} className="flex items-center justify-between p-3 bg-surface-3/50 rounded-lg border border-white/5 hover:border-neon-cyan/20 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-neon-cyan/10 border border-neon-cyan/20 flex items-center justify-center">
+                        <span className="font-mono text-neon-cyan text-xs font-bold">{session.pc_id.toString().padStart(2, '0')}</span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-white/90">{session.client_name || 'Гость'}</div>
+                        <div className="text-xs text-white/40">{session.game || session.pc_name}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-sm text-neon-green">{Math.floor(durationMins / 60)}ч {durationMins % 60}м</div>
+                      <div className="font-mono text-xs text-white/40">{session.cost} ₽</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium text-white/90">{session.user}</div>
-                    <div className="text-xs text-white/40">{session.game}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-sm text-neon-green">{Math.floor(session.duration / 60)}ч {session.duration % 60}м</div>
-                  <div className="font-mono text-xs text-white/40">{session.cost} ₽</div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Top Games */}
+        {/* Zone overview */}
         <div className="bg-surface-2 border border-white/5 rounded-xl p-5">
           <h3 className="font-semibold text-white/80 mb-4 flex items-center gap-2">
-            <Icon name="Gamepad2" size={16} className="text-neon-purple" />
-            Топ игры
+            <Icon name="Map" size={16} className="text-neon-purple" />
+            Зоны
           </h3>
-          <div className="space-y-3">
-            {topGames.map((g, i) => (
-              <div key={i} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/70">{g.game}</span>
-                  <span className="font-mono text-white/40">{g.count}</span>
+          <div className="space-y-4">
+            {zones.map(zone => {
+              const zonePCs = pcs.filter(p => p.zone === zone);
+              const active = zonePCs.filter(p => p.status === 'active').length;
+              const color = zoneColors[zone];
+              return (
+                <div key={zone} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-white/60">{zone}</span>
+                    <span className="font-mono text-xs px-2 py-0.5 rounded-full" style={{ color, background: `${color}15`, border: `1px solid ${color}30` }}>
+                      {active}/{zonePCs.length}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {zonePCs.map(pc => (
+                      <div key={pc.id} className="w-4 h-4 rounded" title={`${pc.name}: ${pc.status}`}
+                        style={{
+                          background: pc.status === 'active' ? color : pc.status === 'idle' ? '#374151' : pc.status === 'maintenance' ? '#f97316' : '#1f2937',
+                          boxShadow: pc.status === 'active' ? `0 0 6px ${color}80` : 'none',
+                        }}
+                      />
+                    ))}
+                    {zonePCs.length === 0 && <span className="text-xs text-white/20">Нет ПК</span>}
+                  </div>
                 </div>
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${(g.count / 3) * 100}%`, background: g.color, boxShadow: `0 0 8px ${g.color}60` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Recent transactions */}
-          <h3 className="font-semibold text-white/80 mt-6 mb-3 flex items-center gap-2">
-            <Icon name="ArrowLeftRight" size={16} className="text-neon-cyan" />
-            Транзакции
-          </h3>
-          <div className="space-y-2">
-            {transactions.slice(0, 4).map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`w-1.5 h-1.5 rounded-full ${tx.type === 'deposit' ? 'bg-neon-green' : tx.type === 'refund' ? 'bg-neon-orange' : 'bg-neon-red'}`} />
-                  <span className="text-xs text-white/60 truncate max-w-[100px]">{tx.user}</span>
+          {/* Finance summary */}
+          {finance && (
+            <div className="mt-5 pt-4 border-t border-white/5 space-y-2">
+              <h3 className="font-semibold text-white/80 mb-3 flex items-center gap-2">
+                <Icon name="BarChart3" size={16} className="text-neon-cyan" />
+                Сегодня
+              </h3>
+              {[
+                { label: 'Доход', value: `${finance.total_sessions.toLocaleString()} ₽`, color: '#22c55e' },
+                { label: 'Пополнений', value: `${finance.total_deposits.toLocaleString()} ₽`, color: '#00ffff' },
+                { label: 'Сессий', value: finance.session_count.toString(), color: '#a855f7' },
+              ].map(item => (
+                <div key={item.label} className="flex justify-between items-center">
+                  <span className="text-xs text-white/40">{item.label}</span>
+                  <span className="font-mono text-xs font-bold" style={{ color: item.color }}>{item.value}</span>
                 </div>
-                <span className={`font-mono text-xs font-medium ${tx.amount > 0 ? 'text-neon-green' : 'text-neon-red'}`}>
-                  {tx.amount > 0 ? '+' : ''}{tx.amount} ₽
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Zone Overview */}
-      <div className="grid grid-cols-3 gap-4">
-        {(['Стандарт', 'VIP', 'Турнирная'] as const).map((zone) => {
-          const zonePCs = pcs.filter(p => p.zone === zone);
-          const active = zonePCs.filter(p => p.status === 'active').length;
-          const color = zone === 'VIP' ? '#a855f7' : zone === 'Турнирная' ? '#f97316' : '#00ffff';
-          return (
-            <div key={zone} className="bg-surface-2 border border-white/5 rounded-xl p-4 card-hover">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-white/70">{zone}</span>
-                <span className="font-mono text-xs px-2 py-0.5 rounded-full" style={{ color, background: `${color}15`, border: `1px solid ${color}30` }}>
-                  {active}/{zonePCs.length}
-                </span>
-              </div>
-              <div className="flex gap-1.5 flex-wrap">
-                {zonePCs.map(pc => (
-                  <div
-                    key={pc.id}
-                    className="w-3 h-3 rounded-sm"
-                    style={{
-                      background: pc.status === 'active' ? color : pc.status === 'idle' ? '#374151' : pc.status === 'maintenance' ? '#f97316' : '#1f2937',
-                      boxShadow: pc.status === 'active' ? `0 0 6px ${color}80` : 'none',
-                    }}
-                    title={`${pc.name}: ${pc.status}`}
-                  />
-                ))}
-              </div>
+              ))}
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
     </div>
   );
