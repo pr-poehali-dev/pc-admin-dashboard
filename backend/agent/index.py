@@ -29,8 +29,12 @@ def handler(event: dict, context) -> dict:
     parts = [p for p in path.strip('/').split('/') if p]
     action = parts[-1] if parts else ''
 
-    headers = event.get('headers') or {}
-    token = headers.get('X-Agent-Token') or headers.get('x-agent-token', '')
+    # Токен читаем из body (заголовки фильтруются платформой)
+    try:
+        _body_for_token = json.loads(event.get('body') or '{}')
+    except Exception:
+        _body_for_token = {}
+    token = _body_for_token.get('token', '')
 
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)

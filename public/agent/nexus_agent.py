@@ -36,7 +36,7 @@ SERVER_URL = "https://functions.poehali.dev/b9f4a55e-1d4e-434c-9baa-b1bbcccb3f9f
 HEARTBEAT_INTERVAL = 5  # секунд
 # =====================================================
 
-HEADERS = {"X-Agent-Token": AGENT_TOKEN, "Content-Type": "application/json"}
+HEADERS = {"Content-Type": "application/json"}
 
 
 def get_local_ip():
@@ -116,7 +116,7 @@ def execute_command(cmd):
                 resp = requests.post(
                     f"{SERVER_URL}/screenshot",
                     headers=HEADERS,
-                    json={"image": image},
+                    json={"token": AGENT_TOKEN, "image": image},
                     timeout=30
                 )
                 result["success"] = resp.status_code == 200
@@ -163,7 +163,7 @@ def execute_command(cmd):
         requests.post(
             f"{SERVER_URL}/result",
             headers=HEADERS,
-            json={"command_id": cmd_id, "result": result},
+            json={"token": AGENT_TOKEN, "command_id": cmd_id, "result": result},
             timeout=10
         )
     except Exception as e:
@@ -175,6 +175,7 @@ def execute_command(cmd):
 def heartbeat():
     try:
         payload = {
+            "token": AGENT_TOKEN,
             "status": get_status(),
             "ip": get_local_ip(),
             "active_window": get_active_window()
